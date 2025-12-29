@@ -1,3 +1,4 @@
+#!/usr/bin/env python3.11
 import sys
 import os
 import argparse
@@ -11,7 +12,7 @@ LIBRARY_ID = os.environ.get('ZOTERO_LIBRARY_ID')
 LIBRARY_TYPE = os.environ.get('ZOTERO_LIBRARY_TYPE', 'user')
 API_KEY = os.environ.get('ZOTERO_API_KEY')
 
-def import_reference(title=None, item_type='journalArticle', collection_id=None, doi=None):
+def import_reference(title=None, item_type='journalArticle', collection_id=None, doi=None, authors=None, url=None):
     if not title and not doi:
         print("Error: You must provide at least a title or a DOI.")
         return
@@ -34,13 +35,35 @@ def import_reference(title=None, item_type='journalArticle', collection_id=None,
     except Exception as e:
         print(f"Error fetching template: {e}")
         return
-    
+
     # 2. Fill in the data
     if title:
         template['title'] = title
     if doi:
         template['DOI'] = doi
-    
+    if url:
+        template['url'] = url
+
+    # Add authors if provided
+    if authors:
+        template['creators'] = []
+        for author in authors:
+            # Parse author string - accept "First Last" or "Last" format
+            parts = author.strip().split(None, 1)  # Split on first whitespace
+            if len(parts) == 2:
+                template['creators'].append({
+                    'creatorType': 'author',
+                    'firstName': parts[0],
+                    'lastName': parts[1]
+                })
+            else:
+                # Single name - could be organization or single-name author
+                template['creators'].append({
+                    'creatorType': 'author',
+                    'lastName': parts[0],
+                    'firstName': ''
+                })
+
     # 3. Add to collection if specified
     if collection_id:
         template['collections'] = [collection_id]
@@ -71,7 +94,9 @@ if __name__ == "__main__":
     parser.add_argument("--type", default="journalArticle", help="Item type (book, webpage, etc.)")
     parser.add_argument("--collection", help="Collection Key (e.g., ABC12345)")
     parser.add_argument("--doi", help="DOI of the reference (e.g., 10.1000/xyz123)")
-    
+    parser.add_argument("--author", action="append", dest="authors", help="Author name (can be used multiple times; format: 'First Last' or 'Last')")
+    parser.add_argument("--url", help="URL to the resource")
+
     args = parser.parse_args()
-    
-    import_reference(args.title, args.type, args.collection, args.doi)
+
+    import_reference(args.title, args.type, args.collection, args.doi, args.authors, args.url)
