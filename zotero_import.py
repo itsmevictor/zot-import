@@ -40,7 +40,18 @@ def import_reference(title=None, item_type='journalArticle', collection_id=None,
     if title:
         template['title'] = title
     if doi:
-        template['DOI'] = doi
+        # Strip URL prefixes to get clean DOI identifier
+        doi_clean = doi
+        if doi_clean.startswith('https://'):
+            doi_clean = doi_clean[8:]
+        elif doi_clean.startswith('http://'):
+            doi_clean = doi_clean[7:]
+        # Also strip doi.org/ or dx.doi.org/ prefixes
+        if doi_clean.startswith('dx.doi.org/'):
+            doi_clean = doi_clean[11:]
+        elif doi_clean.startswith('doi.org/'):
+            doi_clean = doi_clean[8:]
+        template['DOI'] = doi_clean
     if url:
         template['url'] = url
 
